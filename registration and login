@@ -1,0 +1,121 @@
+#servlet code
+package com.RegisterLogin;
+
+import java.io.*;
+import java.sql.*;
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+@WebServlet(urlPatterns = {"/register", "/login"})
+public class RegisterLoginServlet extends HttpServlet {
+
+    Connection con;
+
+    public void init() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            con = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/testdb",
+                "root",
+                "nihil0909"
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void service(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+
+        res.setContentType("text/html");
+        PrintWriter out = res.getWriter();
+
+        String uri = req.getRequestURI();
+        String uname = req.getParameter("username");
+        String pass  = req.getParameter("password");
+
+        out.println("<html><body>");
+
+        try {
+
+            if (uri.endsWith("/register")) {
+                PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO users(username,password) VALUES(?,?)"
+                );
+                ps.setString(1, uname);
+                ps.setString(2, pass);
+                ps.executeUpdate();
+
+                out.println("<h2>Registration Successful</h2>");
+                out.println("<a href='login.jsp'>Go to Login</a>");
+            }
+
+            else if (uri.endsWith("/login")) {
+                PreparedStatement ps = con.prepareStatement(
+                    "SELECT * FROM users WHERE username=? AND password=?"
+                );
+                ps.setString(1, uname);
+                ps.setString(2, pass);
+
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next())
+                    out.println("<h2>Login Successful</h2>");
+                else
+                    out.println("<h2>Invalid Username or Password</h2>");
+
+                out.println("<br><a href='login.jsp'>Back</a>");
+            }
+
+        } catch (Exception e) {
+            out.println("<h3>Error: " + e + "</h3>");
+        }
+
+        out.println("</body></html>");
+    }
+
+    public void destroy() {
+        try { con.close(); } catch (Exception e) {}
+    }
+}
+
+
+#register.jsp
+<%@ page language="java" %>
+<html>
+<body>
+<h2>Register</h2>
+
+<form action="register" method="post">
+    Username: <input type="text" name="username" required><br><br>
+    Password: <input type="password" name="password" required><br><br>
+    <input type="submit" value="Register">
+</form>
+
+<%= request.getAttribute("msg") == null ? "" : request.getAttribute("msg") %>
+
+<br><br>
+<a href="login.jsp">Go to Login</a>
+</body>
+</html>
+
+
+#login.jsp
+<%@ page language="java" %>
+<html>
+<body>
+<h2>Login</h2>
+
+<form action="login" method="post">
+    Username: <input type="text" name="username" required><br><br>
+    Password: <input type="password" name="password" required><br><br>
+    <input type="submit" value="Login">
+</form>
+
+<%= request.getAttribute("msg") == null ? "" : request.getAttribute("msg") %>
+
+<br><br>
+<a href="register.jsp">New User? Register</a>
+</body>
+</html>
